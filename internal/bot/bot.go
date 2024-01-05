@@ -1,21 +1,29 @@
 package bot
 
 import (
+	"fmt"
 	"log"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type BotConfiguration struct  {
+type BotConfiguration struct {
 	token string
+	command CommandService
 }
 
-func NewBot(token string) *BotConfiguration {
+func NewBot(token string, commands CommandService) *BotConfiguration {
 	return &BotConfiguration{
 		token: token,
+		commands: commands,
 	}
 }
 
-func(b *BotConfiguration) Run() error {
+func (b *BotConfiguration) Run() error {
+
+	if len(b.token) == 0 {
+		return fmt.Errorf("Telegram bot token is empty")
+	}
 
 	bot, err := tgbotapi.NewBotAPI(b.token)
 	if err != nil {
@@ -34,6 +42,8 @@ func(b *BotConfiguration) Run() error {
 	for update := range updates {
 		if update.Message != nil { // If we got a message
 			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
+			b.commands.CommandsHandle(msg)
 
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 			msg.ReplyToMessageID = update.Message.MessageID
